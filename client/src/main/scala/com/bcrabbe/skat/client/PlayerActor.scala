@@ -1,8 +1,8 @@
-package com.yalingunayer.bastra.client
+package com.bcrabbe.skat.client
 
 import akka.actor.Actor
-import com.yalingunayer.bastra.commons.domain.Player
-import com.yalingunayer.bastra.commons.Utils
+import com.bcrabbe.skat.common.domain.Player
+import com.bcrabbe.skat.common.Utils
 import scala.util.Success
 import akka.actor.PoisonPill
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,12 +10,12 @@ import scala.concurrent.duration.DurationInt
 import akka.actor.ActorRef
 import scala.util.Failure
 import akka.actor.Props
-import com.yalingunayer.bastra.commons.Messages
-import com.yalingunayer.bastra.commons.domain.GameRoom
-import com.yalingunayer.bastra.commons.domain.Card
-import com.yalingunayer.bastra.commons.domain.CardStack
-import com.yalingunayer.bastra.commons.domain.PlayerState
-import com.yalingunayer.bastra.commons.domain.PlayerScore
+import com.bcrabbe.skat.common.Messages
+import com.bcrabbe.skat.common.domain.GameRoom
+import com.bcrabbe.skat.common.domain.Card
+import com.bcrabbe.skat.common.domain.CardStack
+import com.bcrabbe.skat.common.domain.PlayerState
+import com.bcrabbe.skat.common.domain.PlayerScore
 
 object PlayerActor {
   def props: Props = Props(classOf[PlayerActor])
@@ -281,7 +281,7 @@ class PlayerActor extends Actor {
    */
   def tryReconnect = {
     def doTry(attempts: Int): Unit = {
-      context.system.actorSelection("akka.tcp://BastraServer@127.0.0.1:47000/user/lobby").resolveOne()(10.seconds).onComplete(x => x match {
+      context.system.actorSelection("akka.tcp://SkatServer@127.0.0.1:47000/user/lobby").resolveOne()(10.seconds).onComplete(x => x match {
         case Success(ref: ActorRef) => {
           println("Server found, attempting to connect...")
           server = ref
@@ -301,7 +301,7 @@ class PlayerActor extends Actor {
   }
 
   override def preStart(): Unit = {
-    println("Welcome to Bastra! Please enter your name.")
+    println("Welcome to Skat! Please enter your name.")
     Utils.readResponse.onComplete {
       case Success(name: String) => {
         me = Player(Utils.uuid(), name)

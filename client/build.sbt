@@ -1,2 +1,2 @@
-name := """bastra-client"""
+name := """skat-client"""
 // enablePlugins(JavaAppPackaging)

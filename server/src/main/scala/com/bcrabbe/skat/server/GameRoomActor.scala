@@ -1,21 +1,21 @@
-package com.yalingunayer.bastra.server
+package com.bcrabbe.skat.server
 
-import com.yalingunayer.bastra.commons.domain.GameRoom
+import com.bcrabbe.skat.common.domain.GameRoom
 import akka.actor.Props
 import akka.actor.Actor
-import com.yalingunayer.bastra.commons.Messages
-import com.yalingunayer.bastra.commons.domain.CardStack
+import com.bcrabbe.skat.common.Messages
+import com.bcrabbe.skat.common.domain.CardStack
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.remote.DisassociatedEvent
 import akka.actor.Terminated
 import scala.util.Random
-import com.yalingunayer.bastra.commons.domain.Card
+import com.bcrabbe.skat.common.domain.Card
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
-import com.yalingunayer.bastra.commons.domain.PlayerScore
-import com.yalingunayer.bastra.commons.domain.PlayerState
+import com.bcrabbe.skat.common.domain.PlayerScore
+import com.bcrabbe.skat.common.domain.PlayerState
 
 object GameRoomActor {
 
@@ -42,15 +42,15 @@ object GameRoomActor {
       case Some(other) if card.canFish(other) => {
         val newBucketCards = card :: middleCards ++ player.bucket.cards
 
-        // find out if a bastra is performed
-        val isBastra = middleCards match {
+        // find out if a skat is performed
+        val isSkat = middleCards match {
           case x :: Nil if (x == card) => true
           case _ => false
         }
 
-        val earnedPoints = (card :: middleCards).map(_.score).sum + (if (isBastra) 10 else 0)
+        val earnedPoints = (card :: middleCards).map(_.score).sum + (if (isSkat) 10 else 0)
 
-        val newScore = PlayerScore(earnedPoints + player.score.totalPoints, player.score.bastras + (if (isBastra) 1 else 0), newBucketCards.length)
+        val newScore = PlayerScore(earnedPoints + player.score.totalPoints, player.score.skats + (if (isSkat) 1 else 0), newBucketCards.length)
 
         (true, newScore, CardStack.empty, CardStack(newBucketCards))
       }

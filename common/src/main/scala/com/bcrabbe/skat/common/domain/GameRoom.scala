@@ -1,4 +1,4 @@
-package com.yalingunayer.bastra.commons.domain
+package com.bcrabbe.skat.common.domain
 
 import java.util.Date
 

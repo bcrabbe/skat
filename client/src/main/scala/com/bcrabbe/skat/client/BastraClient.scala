@@ -1,11 +1,10 @@
-
-package com.yalingunayer.bastra.client;
+package com.bcrabbe.skat.client;
 
 import akka.actor.ActorSystem
 
-object BastraClient {
+object SkatClient {
   def main(args: Array[String]): Unit = {
-    val system = ActorSystem("BastraClient")
+    val system = ActorSystem("SkatClient")
     system.actorOf(PlayerActor.props)
   }
 }

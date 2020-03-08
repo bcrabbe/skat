@@ -1,6 +1,6 @@
-package com.yalingunayer.bastra.commons.domain
+package com.bcrabbe.skat.common.domain
 
-import com.yalingunayer.bastra.commons.Utils
+import com.bcrabbe.skat.common.Utils
 
 abstract class Suit(val name: String, val shortName: String) extends Serializable
 abstract class Rank(val points: Int, val name: String, val shortName: String) extends Serializable

@@ -15,6 +15,6 @@ lazy val deps = Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
-lazy val commons = (project in file("commons")).settings(commonSettings, libraryDependencies ++= deps)
+lazy val commons = (project in file("common")).settings(commonSettings, libraryDependencies ++= deps)
 lazy val client = (project in file("client")).settings(commonSettings, libraryDependencies ++= deps).dependsOn(commons)
 lazy val server = (project in file("server")).settings(commonSettings, libraryDependencies ++= deps).dependsOn(commons)

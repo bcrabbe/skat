@@ -1,12 +1,12 @@
-package com.yalingunayer.bastra.server
+package com.bcrabbe.bastra.server
 
 import akka.actor.Actor
 import akka.actor.Props
-import com.yalingunayer.bastra.commons.domain.Player
-import com.yalingunayer.bastra.commons.Messages
+import com.bcrabbe.bastra.commons.domain.Player
+import com.bcrabbe.bastra.commons.Messages
 import akka.actor.ActorRef
-import com.yalingunayer.bastra.commons.domain.GameRoom
-import com.yalingunayer.bastra.commons.Utils
+import com.bcrabbe.bastra.commons.domain.GameRoom
+import com.bcrabbe.bastra.commons.Utils
 import akka.actor.Terminated
 
 object LobbyActor {

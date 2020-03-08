@@ -1,7 +1,7 @@
-package com.yalingunayer.bastra.server
+package com.bcrabbe.skat.server
 
-import com.yalingunayer.bastra.commons.domain.GameRoom
-import com.yalingunayer.bastra.commons.domain.Player
+import com.bcrabbe.skat.common.domain.GameRoom
+import com.bcrabbe.skat.common.domain.Player
 import akka.actor.ActorRef
 
 /**

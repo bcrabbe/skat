@@ -1,4 +1,4 @@
-package com.yalingunayer.bastra.commons.domain
+package com.bcrabbe.skat.common.domain
 
 object Scores {
   val allGames: Seq[Game] = List(

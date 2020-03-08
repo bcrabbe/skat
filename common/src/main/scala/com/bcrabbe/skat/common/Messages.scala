@@ -1,13 +1,13 @@
-package com.yalingunayer.bastra.commons
+package com.bcrabbe.skat.common
 
 import akka.actor.ActorRef
-import com.yalingunayer.bastra.commons.domain.GameRoom
-import com.yalingunayer.bastra.commons.domain.CardStack
-import com.yalingunayer.bastra.commons.domain.Player
-import com.yalingunayer.bastra.commons.domain.BiddingRole
-import com.yalingunayer.bastra.commons.domain.Card
-import com.yalingunayer.bastra.commons.domain.PlayerScore
-import com.yalingunayer.bastra.commons.domain.PlayerState
+import com.bcrabbe.skat.common.domain.GameRoom
+import com.bcrabbe.skat.common.domain.CardStack
+import com.bcrabbe.skat.common.domain.Player
+import com.bcrabbe.skat.common.domain.BiddingRole
+import com.bcrabbe.skat.common.domain.Card
+import com.bcrabbe.skat.common.domain.PlayerScore
+import com.bcrabbe.skat.common.domain.PlayerState
 
 object Messages {
   object Server {

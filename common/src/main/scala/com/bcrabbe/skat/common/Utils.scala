@@ -1,4 +1,4 @@
-package com.yalingunayer.bastra.commons
+package com.bcrabbe.skat.common
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

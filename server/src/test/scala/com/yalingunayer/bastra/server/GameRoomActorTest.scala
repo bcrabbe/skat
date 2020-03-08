@@ -1,14 +1,14 @@
-package com.yalingunayer.bastra.server;
+package com.bcrabbe.skat.server;
 
 import org.scalatest._
-import com.yalingunayer.bastra.commons.domain.CardStack
-import com.yalingunayer.bastra.commons.domain.Card
-import com.yalingunayer.bastra.commons.domain.Rank
-import com.yalingunayer.bastra.commons.domain.Suit
-import com.yalingunayer.bastra.server.GameRoomActor.PlayerInformation
-import com.yalingunayer.bastra.commons.domain.PlayerState
-import com.yalingunayer.bastra.commons.domain.PlayerScore
-import com.yalingunayer.bastra.commons.domain.Player
+import com.bcrabbe.skat.common.domain.CardStack
+import com.bcrabbe.skat.common.domain.Card
+import com.bcrabbe.skat.common.domain.Rank
+import com.bcrabbe.skat.common.domain.Suit
+import com.bcrabbe.skat.server.GameRoomActor.PlayerInformation
+import com.bcrabbe.skat.common.domain.PlayerState
+import com.bcrabbe.skat.common.domain.PlayerScore
+import com.bcrabbe.skat.common.domain.Player
 
 class GameRoomActorSpec extends FlatSpec with Matchers {
   it should "fish when necessary" in {

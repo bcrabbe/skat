@@ -1,1 +1,1 @@
-name := """bastra-commons"""
+name := """skat-common"""
