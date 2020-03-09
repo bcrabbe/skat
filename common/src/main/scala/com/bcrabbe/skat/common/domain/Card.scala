@@ -5,19 +5,19 @@ import com.bcrabbe.skat.common.Utils
 abstract class Suit(val name: String, val shortName: String) extends Serializable
 abstract class Rank(val points: Int, val name: String, val shortName: String) extends Serializable
 
-object Suit {
-  case class Clubs() extends Suit("Clubs", "♣")
-  case class Spades() extends Suit("Spades", "♠")
-  case class Diamonds() extends Suit("Diamonds", "♦")
-  case class Hearts() extends Suit("Hearts", "♥")
+case object Clubs extends Suit("Clubs", "♣")
+case object Spades extends Suit("Spades", "♠")
+case object Diamonds extends Suit("Diamonds", "♦")
+case object Hearts extends Suit("Hearts", "♥")
 
-  def all: List[Suit] = List(Clubs(), Spades(), Diamonds(), Hearts())
+object Suit {
+  def all: List[Suit] = List(Clubs, Spades, Diamonds, Hearts)
 
   implicit def string2suit(s: String) = s match {
-    case "♣" => Clubs()
-    case "♠" => Spades()
-    case "♦" => Diamonds()
-    case "♥" => Hearts()
+    case "♣" => Clubs
+    case "♠" => Spades
+    case "♦" => Diamonds
+    case "♥" => Hearts
     case _ => throw new RuntimeException(f"Unknown suit ${s}")
   }
 }
@@ -77,7 +77,7 @@ case class Card(val rank: Rank, val suit: Suit) {
 
   def score(): Int = {
     (rank, suit) match {
-      case (Rank.Ten(), Suit.Diamonds()) => 3
+      case (Rank.Ten(), Diamonds) => 3
       case (Rank.Jack(), _) => 1
       case (Rank.Ace(), _) => 1
       case _ => 0

@@ -23,6 +23,8 @@ object GameRoomActor {
 
   case class StateResult(newState: GameRoomActor.GameState, winner: Option[PlayerState], isFished: Boolean)
 
+  case class PlayerInfo(session: PlayerSession, state: PlayerState)
+
   object Messages {
     case class ReceivePlayers(player: List[PlayerSession])
   }
@@ -32,7 +34,7 @@ object GameRoomActor {
   /**
    * Determine the next state based on a card that was played
    */
-  def determineNextState(card: Card, playerInfo: PlayerState, opponentInfo: PlayerState, deckCards: List[Card], middleCards: List[Card]): StateResult = {
+  def determineNextState(card: Card, playerInfo: PlayerInfo, opponentInfo: PlayerInfo, deckCards: List[Card], middleCards: List[Card]): StateResult = {
     val player = playerInfo.state
     val opponent = opponentInfo.state
 

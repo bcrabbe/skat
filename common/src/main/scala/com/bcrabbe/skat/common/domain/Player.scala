@@ -1,14 +1,15 @@
 package com.bcrabbe.skat.common.domain
 
+
 /**
  * Holds general information about a player.
  */
 case class Player(id: String, name: String)
 
 sealed trait BiddingRole
-case class Geeben extends BiddingRole
-case class Heuren extends BiddingRole
-case class Zaagen extends BiddingRole
+case object Geeben extends BiddingRole
+case object Heuren extends BiddingRole
+case object Zaagen extends BiddingRole
 
 object BiddingRole {
   def all: List[BiddingRole] = List(Geeben, Heuren, Zaagen)
@@ -26,4 +27,4 @@ object PlayerScore {
 /**
  * Represents the state the player is currently in. Intended only for the player themselves to see.
  */
-case class PlayerState(session: PlayerSession, score: PlayerScore, biddingRole: BiddingRole, playing: Option[Bool], hand: CardStack)
+case class PlayerState(score: PlayerScore, biddingRole: BiddingRole, playing: Option[Boolean], hand: CardStack)
