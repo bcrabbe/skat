@@ -1,4 +1,3 @@
-# bastra
-A simple terminal-based bastra game. For more information, see [https://yalingunayer.com/blog/actor-based-multiplayer-card-game/](https://yalingunayer.com/blog/actor-based-multiplayer-card-game/)
+# Skat
 
-![Screenshot](screenshot.png)
+[https://en.wikipedia.org/wiki/Skat_(card_game)#Grand_game]
