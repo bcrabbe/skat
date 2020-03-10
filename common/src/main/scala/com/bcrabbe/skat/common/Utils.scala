@@ -11,7 +11,7 @@ object Utils {
   def readResponse: Future[String] = Future {
     scala.io.StdIn.readLine()
   }
-  
+
   /**
    * Try reading an integer from the standard input
    */
@@ -24,7 +24,7 @@ object Utils {
       }
     })
   }
-  
+
   /**
    * Convert a yes/no response to boolean for easier use
    */
@@ -34,7 +34,7 @@ object Utils {
       case _ => false
     })
   }
-  
+
   /**
    * Remove the last occurrence of an item from a list
    * Note that this is a very naive implementation and is probably very inefficient
@@ -47,10 +47,10 @@ object Utils {
       }
       case Nil => Nil
     }
-    
+
     remove(list.reverse).reverse
   }
-  
+
   /**
    * Generate a random UUID
    */

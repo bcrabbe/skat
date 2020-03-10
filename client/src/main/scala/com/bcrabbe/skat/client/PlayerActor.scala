@@ -1,7 +1,7 @@
 package com.bcrabbe.skat.client
 
 import akka.actor.Actor
-import com.bcrabbe.skat.common.domain.Player
+import com.bcrabbe.skat.common.domain._
 import com.bcrabbe.skat.common.Utils
 import scala.util.Success
 import akka.actor.PoisonPill
@@ -11,11 +11,6 @@ import akka.actor.ActorRef
 import scala.util.Failure
 import akka.actor.Props
 import com.bcrabbe.skat.common.Messages
-import com.bcrabbe.skat.common.domain.GameRoom
-import com.bcrabbe.skat.common.domain.Card
-import com.bcrabbe.skat.common.domain.CardStack
-import com.bcrabbe.skat.common.domain.PlayerState
-import com.bcrabbe.skat.common.domain.PlayerScore
 
 object PlayerActor {
   def props: Props = Props(classOf[PlayerActor])
@@ -62,7 +57,7 @@ class PlayerActor extends Actor {
    */
   def resetState: Unit = {
     room = null
-    opponent = null
+    opponents = null
     hand = null
   }
 

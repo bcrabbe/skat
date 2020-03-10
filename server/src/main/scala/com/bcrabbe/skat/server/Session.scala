@@ -1,7 +1,6 @@
 package com.bcrabbe.skat.server
 
-import com.bcrabbe.skat.common.domain.GameRoom
-import com.bcrabbe.skat.common.domain.Player
+import com.bcrabbe.skat.common.domain._
 import akka.actor.ActorRef
 
 /**

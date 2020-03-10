@@ -19,6 +19,34 @@ class LobbyActor extends Actor {
   var waiting: List[PlayerSession] = List()
   val playersPerGame = 3
 
+    def receive: Receive = {
+      case Messages.Server.Connect(player: Player) => {
+        println(f"Player connected: ${player}")
+        sender ! Messages.Server.Connected()
+        context.watch(sender)
+        val session = PlayerSession(player, sender)
+        players = players + (sender -> session)
+        waiting = waiting :+ session
+        tryMakeMatch
+      }
+
+    case Terminated(ref: ActorRef) if players.isDefinedAt(ref) => {
+      // a player has disconnected
+      val session = players.get(ref).get
+      // remove them from the players list
+      players = players - ref
+
+      // and also from the waiting queue (if present)
+      waiting = Utils.removeLast(waiting, session)
+
+      println(f"Player has disconnected: ${session.player}")
+    }
+  }
+
+  override def preStart() = {
+    println("Server is now ready to accept connections")
+  }
+
   def tryMakeMatch = waiting.length match {
     case enoughPlayers: Int if enoughPlayers >= playersPerGame => {
       val playersForGame = waiting.take(playersPerGame)
@@ -33,37 +61,5 @@ class LobbyActor extends Actor {
       roomRef ! GameRoomActor.Messages.ReceivePlayers(playersForGame)
     }
     case _ => println("Not enough players to make a match")
-  }
-
-  def receive: Receive = {
-    case Messages.Server.Connect(player: Player) => {
-      println(f"Player connected: ${player}")
-
-      sender ! Messages.Server.Connected()
-
-      context.watch(sender)
-
-      val session = PlayerSession(player, sender)
-      players = players + (sender -> session)
-      waiting = waiting :+ session
-      tryMakeMatch
-    }
-
-    case Terminated(ref: ActorRef) if players.isDefinedAt(ref) => {
-      // a player has disconnected
-      val session = players.get(ref).get
-
-      // remove them from the players list
-      players = players - ref
-
-      // and also from the waiting queue (if present)
-      waiting = Utils.removeLast(waiting, session)
-
-      println(f"Player has disconnected: ${session.player}")
-    }
-  }
-
-  override def preStart() = {
-    println("Server is now ready to accept connections")
   }
 }

@@ -1,13 +1,7 @@
 package com.bcrabbe.skat.common
 
 import akka.actor.ActorRef
-import com.bcrabbe.skat.common.domain.GameRoom
-import com.bcrabbe.skat.common.domain.CardStack
-import com.bcrabbe.skat.common.domain.Player
-import com.bcrabbe.skat.common.domain.BiddingRole
-import com.bcrabbe.skat.common.domain.Card
-import com.bcrabbe.skat.common.domain.PlayerScore
-import com.bcrabbe.skat.common.domain.PlayerState
+import com.bcrabbe.skat.common.domain._
 
 object Messages {
   object Server {
