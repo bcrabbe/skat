@@ -161,25 +161,31 @@ class PlayerActor extends Actor {
   /**
    * The player has joined a game room and is now waiting for the game to start
    */
-  def waitingToStart: Receive = {
+  def waitingToStart: Receive = playing orElse {
     case m: Messages.Game.SetUp => {
       opponents = m.opponents
 
       println(f"Your are playing with ${opponents.map(_.name)}")
-      context.become(turnPending)
+      context.become(waitingForHand)
     }
   }
 
-  def waitingForHand: Receive = {
-    case m: Messages.Game.CardsDelt => {
-      hand = m.cards
-      context.become(beginBidding)
+  def waitingForHand: Receive = playing orElse {
+    case Messages.Game.CardsDelt(cards: CardStack) => {
+      hand = cards
+      context.become(waitingForBiddingRole)
     }
   }
 
-  def beginBidding: Receive = {
-    case m: Messages.Game.Bidding.Listening => {
-      context.become(beginBidding)
+  def waitingForBiddingRole: Receive = playing orElse {
+    case m: Messages.Game.Bidding.Roles.Speaking => {
+      println("you are speaking")
+    }
+    case m: Messages.Game.Bidding.Roles.Waiting => {
+      println("you are waiting")
+    }
+    case m: Messages.Game.Bidding.Roles.Listening => {
+      println("you are listening")
     }
   }
 
@@ -211,14 +217,13 @@ class PlayerActor extends Actor {
         leaveRoom
       }
     }
-    case Events.CardPlayed => println("Please wait until it's your turn")
     case Messages.Server.Message(msg) => println(f"[Server]: $msg")
   }
 
   /**
-   * The "limbo" state where the player is waiting for the server to decide whose turn it is
+   * The "limbo" state where the player is waiting for the server to decide whose begins
    */
-  def turnPending: Receive = playing orElse {
+  def dealPending: Receive = playing orElse {
     case Messages.Game.InTurn(top: Option[Card], isFished: Boolean, state: PlayerState, opponentScore: PlayerScore) => {
       hand = state.hand
 
@@ -228,32 +233,29 @@ class PlayerActor extends Actor {
 
       println(f"It's your turn now. Your Score: ${state.score}, Opponent's Score: ${opponentScore}")
 
-      context.become(inTurn)
-
       promptCard(top)
     }
     case Messages.Game.OpponentInTurn(top: Option[Card], isFished: Boolean, state: PlayerState, opponentScore: PlayerScore) => {
       println(f"It's the opponent's turn now. Your Score: ${state.score}, Opponent's Score: ${opponentScore}")
 
-      context.become(opponentInTurn)
     }
   }
 
-  /**
-   * It's the opponent's turn
-   */
-  def opponentInTurn: Receive = turnPending
+  // /**
+  //  * It's the opponent's turn
+  //  */
+  // def opponentInTurn: Receive = turnPending
 
-  /**
-   * It's the player's turn
-   */
-  def inTurn: Receive = turnPending orElse {
-    case Events.CardPlayed(card) => {
-      roomRef ! Messages.Game.CardPlayed(card)
+  // /**
+  //  * It's the player's turn
+  //  */
+  // def inTurn: Receive = turnPending orElse {
+  //   case Events.CardPlayed(card) => {
+  //     roomRef ! Messages.Game.CardPlayed(card)
 
-      println(f"You have played $card")
-    }
-  }
+  //     println(f"You have played $card")
+  //   }
+  // }
 
   /**
    * The game is finished. Wait for a possible restart

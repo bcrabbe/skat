@@ -1,2 +1,2 @@
 name := """skat-server"""
-// enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging)

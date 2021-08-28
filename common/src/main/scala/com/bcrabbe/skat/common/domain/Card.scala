@@ -75,18 +75,13 @@ case class Card(val rank: Rank, val suit: Suit) {
   def name(): String = f"${rank.name} of ${suit.name}"
   def shortName(): String = f"${rank.shortName}${suit.shortName}"
 
-  def score(): Int = {
-    (rank, suit) match {
-      case (Rank.Ten(), Diamonds) => 3
-      case (Rank.Jack(), _) => 1
-      case (Rank.Ace(), _) => 1
-      case _ => 0
-    }
-  }
-
-  def canFish(other: Card) = {
-    if (rank == Rank.Jack()) true
-    else this == other
+  def score(): Int = rank match {
+    case (Rank.Ten()) => 10
+    case (Rank.Jack()) => 2
+    case (Rank.Ace()) => 11
+    case (Rank.King()) => 4
+    case (Rank.Queen()) => 3
+    case _ => 0
   }
 
   override def toString(): String = shortName

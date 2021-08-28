@@ -1,4 +1,4 @@
-package com.bcrabbe.skat.server
+package com.bcrabbe.skat.server.session
 
 import com.bcrabbe.skat.common.domain._
 import akka.actor.ActorRef

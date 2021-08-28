@@ -1,13 +1,16 @@
-package com.bcrabbe.skat.server
+package com.bcrabbe.skat.server.lobby
 
 import akka.actor.Actor
-import akka.actor.Props
-import com.bcrabbe.skat.common.domain.Player
-import com.bcrabbe.skat.common.Messages
 import akka.actor.ActorRef
-import com.bcrabbe.skat.common.domain.GameRoom
-import com.bcrabbe.skat.common.Utils
+import akka.actor.Props
 import akka.actor.Terminated
+import com.bcrabbe.skat.common.Messages
+import com.bcrabbe.skat.common.Utils
+import com.bcrabbe.skat.common.domain.GameRoom
+import com.bcrabbe.skat.common.domain.Player
+import com.bcrabbe.skat.server.session.GameSession
+import com.bcrabbe.skat.server.session.PlayerSession
+import com.bcrabbe.skat.server.game.GameRoomActor
 
 object LobbyActor {
   def props() = Props(classOf[LobbyActor])
@@ -51,7 +54,7 @@ class LobbyActor extends Actor {
     case enoughPlayers: Int if enoughPlayers >= playersPerGame => {
       val playersForGame = waiting.take(playersPerGame)
 
-      val room = new GameRoom(name = Utils.uuid)
+      val room = new GameRoom(name = s"Game room ${games.size}")
       val roomRef = context.system.actorOf(GameRoomActor.props(room))
 
       waiting = waiting.drop(playersPerGame)

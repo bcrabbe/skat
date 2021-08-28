@@ -18,7 +18,7 @@ object Messages {
   object Game {
     case class Joined(room: GameRoom)
     case class SetUp(opponents: List[Player])
-    case class CardsDealt(cards: CardStack)
+    case class CardsDelt(cards: CardStack)
 
     case class CardPlayed(card: Card)
     case class Win()
@@ -29,9 +29,15 @@ object Messages {
     case class Leave()
 
     object Bidding {
-      case class Listening(points: Int)
-      case class Speaking(points: Int)
-      case class Waiting(points: Int)
+      trait RoleMessage
+      object Roles {
+        case class Listening() extends RoleMessage
+        case class Speaking() extends RoleMessage
+        case class Waiting() extends RoleMessage
+        case class Passed() extends RoleMessage
+      }
+      case class Offer(points: Int)
+
     }
 
     object Terminate {
