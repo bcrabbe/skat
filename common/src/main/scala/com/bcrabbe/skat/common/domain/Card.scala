@@ -87,14 +87,15 @@ case class Card(val rank: Rank, val suit: Suit) {
   override def toString(): String = shortName
 }
 
-case class CardStack(val cards: List[Card]) {
+case class CardStack(var cards: List[Card]) {
+
   def removed(card: Card): CardStack = CardStack(Utils.removeLast(cards, card))
   def removed(cards: Seq[Card]): CardStack = cards.foldLeft(this)((stack, card) => stack.removed(card))
   def added(card: Card): CardStack = CardStack(cards :+ card)
   def isEmpty = cards.isEmpty
   def deal(n: Int): CardStack = {
     val delt = cards.take(n)
-    cards.drop(n)
+    cards = cards.drop(n)
     delt
   }
   override def toString(): String = cards.mkString(", ")

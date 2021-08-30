@@ -165,7 +165,7 @@ class PlayerActor extends Actor {
     case m: Messages.Game.SetUp => {
       opponents = m.opponents
 
-      println(f"Your are playing with ${opponents.map(_.name)}")
+      println(f"You are playing with ${opponents.map(_.name).mkString(" and ")}")
       context.become(waitingForHand)
     }
   }
@@ -173,6 +173,7 @@ class PlayerActor extends Actor {
   def waitingForHand: Receive = playing orElse {
     case Messages.Game.CardsDelt(cards: CardStack) => {
       hand = cards
+      println(s"You were delt $cards")
       context.become(waitingForBiddingRole)
     }
   }
