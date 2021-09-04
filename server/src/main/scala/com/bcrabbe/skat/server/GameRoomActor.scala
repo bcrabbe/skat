@@ -48,6 +48,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
       )
       //notify players of opponents
       playersForGame.foreach((playerSession) => {
+        println (s"sending ${playerSession.ref} ${Messages.Game.Joined(room)}")
         playerSession.ref ! Messages.Game.Joined(room)
         val opponents: List[Player] = playersForGame.filter((p) => p != playerSession).map(_.player)
         playerSession.ref ! Messages.Game.SetUp(opponents)

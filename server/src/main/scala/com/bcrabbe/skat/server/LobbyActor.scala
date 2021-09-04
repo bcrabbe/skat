@@ -50,17 +50,17 @@ class LobbyActor extends Actor {
     println("Server is now ready to accept connections")
   }
 
+  def startRoom(room: GameRoom): ActorRef = {
+    context.system.actorOf(GameRoomActor.props(room))
+  }
+
   def tryMakeMatch = waiting.length match {
     case enoughPlayers: Int if enoughPlayers >= playersPerGame => {
       val playersForGame = waiting.take(playersPerGame)
-
       val room = new GameRoom(name = s"Game room ${games.size}")
-      val roomRef = context.system.actorOf(GameRoomActor.props(room))
-
+      val roomRef = this.startRoom(room)
       waiting = waiting.drop(playersPerGame)
-
       println(f"Players ${playersForGame} are matched and will promptly join the room ${room}")
-
       roomRef ! GameRoomActor.Messages.ReceivePlayers(playersForGame)
     }
     case _ => println("Not enough players to make a match")
