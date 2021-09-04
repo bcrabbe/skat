@@ -22,16 +22,16 @@ class LobbyActor extends Actor {
   var waiting: List[PlayerSession] = List()
   val playersPerGame = 3
 
-    def receive: Receive = {
-      case Messages.Server.Connect(player: Player) => {
-        println(f"Player connected: ${player}")
-        sender ! Messages.Server.Connected()
-        context.watch(sender)
-        val session = PlayerSession(player, sender)
-        players = players + (sender -> session)
-        waiting = waiting :+ session
-        tryMakeMatch
-      }
+  def receive: Receive = {
+    case Messages.Server.Connect(player: Player) => {
+      println(f"Player connected: ${player}")
+      sender ! Messages.Server.Connected()
+      context.watch(sender)
+      val session = PlayerSession(player, sender)
+      players = players + (sender -> session)
+      waiting = waiting :+ session
+      tryMakeMatch
+    }
 
     case Terminated(ref: ActorRef) if players.isDefinedAt(ref) => {
       // a player has disconnected

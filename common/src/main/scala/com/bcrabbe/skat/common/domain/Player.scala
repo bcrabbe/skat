@@ -1,6 +1,6 @@
 package com.bcrabbe.skat.common.domain
 
-import  com.bcrabbe.skat.common.Messages
+import com.bcrabbe.skat.common.Messages
 
 /**
  * Holds general information about a player.
