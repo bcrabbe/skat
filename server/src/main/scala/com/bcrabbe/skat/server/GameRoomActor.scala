@@ -37,7 +37,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
   /**
     * The inital state. Wait for the matchmaking server to introduce the players.
     */
-  def initializing: Receive = {
+  def initializing: Receive = checkFailures(GameRoomActor.GameState(skat = CardStack.empty, players = List.empty)) orElse {
     case GameRoomActor.Messages.ReceivePlayers(playersForGame: List[PlayerSession]) => {
       //store player refs
       playerActorMap = playersForGame.foldLeft(Map[ActorRef, PlayerSession]())(
@@ -48,7 +48,6 @@ class GameRoomActor(val room: GameRoom) extends Actor {
       )
       //notify players of opponents
       playersForGame.foreach((playerSession) => {
-        println (s"sending ${playerSession.ref} ${Messages.Game.Joined(room)}")
         playerSession.ref ! Messages.Game.Joined(room)
         val opponents: List[Player] = playersForGame.filter((p) => p != playerSession).map(_.player)
         playerSession.ref ! Messages.Game.SetUp(opponents)
@@ -160,5 +159,4 @@ class GameRoomActor(val room: GameRoom) extends Actor {
     val session = playerActorMap.get(ref).get
     println(f"Player ${session.player} has left the game.")
     self ! Messages.Game.Terminate(session.player)
-  }
-}
+  }}

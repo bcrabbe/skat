@@ -1,105 +1,70 @@
-// package com.bcrabbe.skat.server;
+package com.bcrabbe.skat.server.game
 
-// import org.scalatest._
-// import org.scalatest.flatspec._
-// import com.bcrabbe.skat.common.domain.CardStack
-// import com.bcrabbe.skat.common.domain.Card
-// import com.bcrabbe.skat.common.domain.Rank
-// import com.bcrabbe.skat.common.domain.Suit
-// import com.bcrabbe.skat.server.GameRoomActor.PlayerInformation
-// import com.bcrabbe.skat.common.domain.PlayerState
-// import com.bcrabbe.skat.common.domain.PlayerScore
-// import com.bcrabbe.skat.common.domain.Player
-// import org.mockito.scalatest.IdiomaticMockito
+import com.bcrabbe.skat.server.lobby.LobbyActor
+import akka.actor.{ ActorSystem, Terminated }
+import akka.testkit.{ ImplicitSender, TestActors, TestKit, TestProbe, TestActorRef }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpecLike
+import scala.concurrent.duration._
+import com.bcrabbe.skat.common.domain.{Player, GameRoom}
+import com.bcrabbe.skat.common.Messages
+import akka.actor.PoisonPill
+import com.bcrabbe.skat.server.session.PlayerSession
 
-// class GameRoomActorSpec extends FlatSpec with Matchers with IdiomaticMockito {
-//   it should "fish when necessary" in {
-//     val baseDeck = CardStack.sorted
+class GameRoomActorTest() extends TestKit(ActorSystem("GameRoomActorTest"))
+    with AnyFlatSpecLike
+    with ImplicitSender
+    with Matchers
+    with BeforeAndAfterAll {
 
-//     val p1 = Player("foo", "Foo")
-//     val p2 = Player("bar", "Bar")
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
-//     val card: Card = "J♠"
-//     val hand1: List[Card] = List("A♠", "2♠", "3♠", card)
-//     val hand2: List[Card] = List("A♦", "2♦", "3♦", "4♦")
-//     val middleStack: List[Card] = List("A♣")
-//     val deck = baseDeck.removed(hand1 ++ hand2 ++ middleStack)
+  behavior of "GameRoom"
 
-//     val player1 = PlayerInformation(PlayerSession(p1, null), PlayerState(hand1, CardStack.empty, PlayerScore.zero))
-//     val player2 = PlayerInformation(PlayerSession(p2, null), PlayerState(hand2, CardStack.empty, PlayerScore.zero))
+  it should "deal" in {
+    val players: List[TestProbe] = List.range(1, 4).map(n => new TestProbe(system) {
+      val player = Player(this.ref.path.name, s"PlayerProbe$n")
+      val playerSession = PlayerSession(player, self)
+    })
+    val room = new GameRoom(name = s"DealTestRoom")
+    val gameRoom = TestActorRef(new GameRoomActor(room), "room")
 
-//     val result = GameRoomActor.determineNextState(card, player1, player2, deck.cards, middleStack)
+    gameRoom ! GameRoomActor.Messages.ReceivePlayers(
+      players.map(probe => PlayerSession(
+        Player(probe.ref.path.name, "playerProbe"),
+        probe.ref
+      ))
+    )
 
-//     result.winner should be (None)
-//     result.newState.deck should be (deck)
-//     result.newState.playerInTurn.state.hand should be (CardStack(hand2))
-//     result.newState.playerWaiting.state.hand should be (CardStack(hand1).removed(card))
-//     result.newState.playerWaiting.state.bucket should be (CardStack(card :: middleStack))
-//     result.newState.middleStack.isEmpty should be (true)
-//     result.isFished should be (true)
-//   }
+    players(0).expectMsg(Messages.Game.Joined(room))
 
-//   it should "not fish when not possible" in {
-//     val baseDeck = CardStack.sorted
+    gameRoom ! PoisonPill
+  }
 
-//     val p1 = Player("foo", "Foo")
-//     val p2 = Player("bar", "Bar")
+//   it should "know when a player leaves" in {
+//     val roomProbe = TestProbe("GameRoom")
+//     val lobby = TestActorRef(new LobbyActor {
+//       override def startRoom(room: GameRoom) = roomProbe.ref
+//     }, "lobby")
 
-//     val card: Card = "4♠"
-//     val hand1: List[Card] = List("A♠", "2♠", "3♠", card)
-//     val hand2: List[Card] = List("A♦", "2♦", "3♦", "4♦")
-//     val middleStack: List[Card] = List("A♣")
-//     val deck = baseDeck.removed(hand1 ++ hand2 ++ middleStack)
+//     val player1 = new TestProbe(system) {
+//       val player = Player(this.ref.path.name, s"PlayerProbe-quiter")
+//       lobby ! Messages.Server.Connect(player)
+//     }
+//     val player2 = new TestProbe(system) {
+//       val player = Player(this.ref.path.name, s"PlayerProbe-stays")
+//       lobby ! Messages.Server.Connect(player)
+//     }
+// //    player1.stop()
+//     lobby ! Terminated(player1.ref)
 
-//     val player1 = PlayerInformation(PlayerSession(p1, null), PlayerState(hand1, CardStack.empty, PlayerScore.zero))
-//     val player2 = PlayerInformation(PlayerSession(p2, null), PlayerState(hand2, CardStack.empty, PlayerScore.zero))
-
-//     val result = GameRoomActor.determineNextState(card, player1, player2, deck.cards, middleStack)
-
-//     result.winner should be (None)
-//     result.newState.deck should be (deck)
-//     result.newState.playerInTurn.state.hand should be (CardStack(hand2))
-//     result.newState.playerWaiting.state.hand should be (CardStack(hand1).removed(card))
-//     result.newState.playerWaiting.state.bucket should be (CardStack.empty)
-//     result.newState.middleStack should be (CardStack(card :: middleStack))
-//     result.isFished should be (false)
-//   }
-
-//   it should "should end the round and elect a winner when no cards remain" in {
-//     val baseDeck = CardStack.sorted
-
-//     val p1 = Player("foo", "Foo")
-//     val p2 = Player("bar", "Bar")
-
-//     val hand1 = baseDeck.cards.take(4)
-//     val hand2 = baseDeck.cards.drop(4).take(4)
-//     val middleStack = baseDeck.cards.drop(8).take(4)
-//     val deck = baseDeck.cards.drop(12)
-
-//     val player1 = PlayerInformation(PlayerSession(p1, null), PlayerState(hand1, CardStack.empty, PlayerScore.zero))
-//     val player2 = PlayerInformation(PlayerSession(p2, null), PlayerState(hand2, CardStack.empty, PlayerScore.zero))
-
-//     // simulate the game by running playing the first card on all turns for each player
-//     def playAllRounds(player: PlayerInformation, opponent: PlayerInformation, remaining: CardStack, middle: CardStack): GameRoomActor.StateResult = {
-//       def doPlayRound(round: Int, player: PlayerInformation, opponent: PlayerInformation, remaining: CardStack, middle: CardStack): GameRoomActor.StateResult = {
-//         if (round >= 1000) {
-//           throw new RuntimeException("The game wasn't finished after 1000 rounds");
-//         }
-//         val card = player.state.hand.cards.head
-//         val result = GameRoomActor.determineNextState(card, player, opponent, remaining.cards, middle.cards)
-
-//         if (result.winner.isDefined) result
-//         else {
-//           val nextState = result.newState
-//           doPlayRound(round + 1, nextState.playerInTurn, nextState.playerWaiting, result.newState.deck, result.newState.middleStack)
-//         }
-//       }
-
-//       doPlayRound(0, player, opponent, remaining, middle)
+//     within(1 seconds, 2 seconds) {
+//       lobby.underlyingActor.waiting.length shouldEqual 1
 //     }
 
-//     val result = playAllRounds(player1, player2, deck, middleStack)
-
-//     result.winner.isDefined should be (true)
 //   }
-// }
+
+}
