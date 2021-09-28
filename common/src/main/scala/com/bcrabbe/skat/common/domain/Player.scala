@@ -17,18 +17,11 @@ case class PlayerState(
   hand: CardStack
 )
 
-sealed trait BiddingRole {
-  def message: Messages.Game.Bidding.RoleMessage
-}
-case object Geeben extends BiddingRole {
-  def message = Messages.Game.Bidding.Roles.Waiting()
-}
-case object Heuren extends BiddingRole {
-  def message = Messages.Game.Bidding.Roles.Listening()
-}
-case object Zaagen extends BiddingRole {
-  def message = Messages.Game.Bidding.Roles.Speaking()
-}
+sealed trait BiddingRole
+case object Geeben extends BiddingRole
+case object Heuren extends BiddingRole
+case object Zaagen extends BiddingRole
+case object Passed extends BiddingRole
 
 object BiddingRole {
   def all: List[BiddingRole] = List(Geeben, Heuren, Zaagen)

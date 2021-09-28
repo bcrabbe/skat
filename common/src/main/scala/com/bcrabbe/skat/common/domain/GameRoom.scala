@@ -1,7 +1,7 @@
 package com.bcrabbe.skat.common.domain
 
 import java.util.Date
-
+import scala.concurrent.duration.Duration
 
 /**
  * A class that represents a game room.
@@ -9,4 +9,5 @@ import java.util.Date
  */
 case class GameRoom(val name: String) {
   val createdAt = new Date
+  val turnTime = Duration.Inf
 }

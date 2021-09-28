@@ -16,7 +16,19 @@ import scala.util.Try
 
 object GameRoomActor {
 
-  case class GameState(skat: CardStack, players: List[PlayerInfo])
+  case class GameState(
+    skat: CardStack,
+    players: List[PlayerInfo],
+    bidded: Option[Int] = None,
+    gameType: Option[Game] = None,
+    biddingWinner: Option[Player] = None
+  )
+
+  def getPlayersByRole(state: GameState): Map[BiddingRole, PlayerInfo] = state.players
+   .groupBy(_.state.biddingRole)
+   .map {
+     case (role, playerList: List[PlayerInfo]) => (role, playerList(0))
+   }
 
   case class StateResult(newState: GameRoomActor.GameState, winner: Option[PlayerInfo], isFished: Boolean)
 
@@ -31,6 +43,8 @@ object GameRoomActor {
 }
 
 class GameRoomActor(val room: GameRoom) extends Actor {
+  import GameRoomActor.{ GameState, PlayerInfo, getPlayersByRole }
+
   var playerActorMap: Map[ActorRef, PlayerSession] = Map()
   def receive = initializing
 
@@ -79,32 +93,121 @@ class GameRoomActor(val room: GameRoom) extends Actor {
     }
     println(s"Cards delt. Starting bidding between $playersWithHands")
     val initialState = GameRoomActor.GameState(skat, playersWithHands)
-    context.become(bidding(initialState))
-
     playersWithHands.foreach(
       (player: GameRoomActor.PlayerInfo) => {
         player.session.ref ! Messages.Game.CardsDelt(player.state.hand)
-        player.session.ref ! player.state.biddingRole.message
       }
     )
-    //send initial bidding message
-    // val zaagenPlayer = initialState.players.find(_.state.biddingRole == Zaagen)
-    // zaagenPlayer.ref ! Messages.Game.Bidding.Roles.Speaking()
-    // val heurenPlayer = initialState.players.find(_.state.biddingRole == Heuren)
-    // heurenPlayer.ref ! Messages.Game.Bidding.Roles.Listening()
-    // val geebenPlayer = initialState.players.find(_.state.biddingRole == Geeben)
-    // geebenPlayer.ref ! Messages.Game.Bidding.Roles.Waiting()
+    val playersByRole = getPlayersByRole(initialState)
+    playersByRole(Zaagen).session.ref ! Messages.Game.Bidding.Roles.Speaking(playersByRole(Heuren).session.player)
+    playersByRole(Heuren).session.ref ! Messages.Game.Bidding.Roles.Listening(playersByRole(Zaagen).session.player)
+    playersByRole(Geeben).session.ref ! Messages.Game.Bidding.Roles.Waiting(playersByRole(Zaagen).session.player)
+    context.become(expectBid(initialState))
   }
 
   /**
     * Conduct bidding.
     */
-  def bidding(state: GameRoomActor.GameState): Receive = checkFailures(state) orElse {
-    case Messages.Game.Bidding.Offer(points: Int) => {
-      println (s"recieved bid of $points from $sender")
+  def expectBid(state: GameRoomActor.GameState): Receive = {
+    val playersByRole = getPlayersByRole(state)
+    checkFailures(state) orElse {
+      case m if isSentBy(Zaagen)(sender, state) => m match {
+        case Messages.Game.Bidding.Bid(points) if points > state.bidded.getOrElse(0) => {
+          println (s"Bid of $points from Zaagen player $sender")
+          state.players
+            .filterNot(p => p.state.biddingRole == Zaagen)
+            .foreach(_.session.ref ! Messages.Game.Bidding.ObservedBid(playersByRole(Zaagen).session.player, points))
+          context.become(expectBidResponse(state.copy(bidded = Some(points))))
+        }
+        case Messages.Game.Bidding.Pass() => {
+          val points = state.bidded.getOrElse(Scores.biddingScores(0)._1)
+          println(s"Zaagen player $sender passed on ${points}")
+          state.players
+            .filterNot(p => p.state.biddingRole == Zaagen)
+            .foreach(_.session.ref ! Messages.Game.Bidding.ObservedPass(playersByRole(Zaagen).session.player, points))
+          context.become(nextBiddingRoles(Zaagen, state))
+        }
+      }
+      case m => {
+        println(s"ignored $m from $sender - expecting bid")
+      }
     }
   }
 
+  def isSentBy(role: BiddingRole)(sender: ActorRef, state: GameRoomActor.GameState): Boolean = {
+    Some(sender) == state.players.find(p => p.state.biddingRole == role).map(_.session.ref)
+  }
+
+  def expectBidResponse(state: GameRoomActor.GameState): Receive = checkFailures(state) orElse {
+    case m if isSentBy(Heuren)(sender, state) => {
+      val points = state.bidded.getOrElse(Scores.biddingScores(0)._1)
+      val playersByRole = getPlayersByRole(state)
+      m match {
+        case Messages.Game.Bidding.AcceptBid() => {
+          println(s"Heuren player accepted")
+          state.players.
+            filterNot(p => p.state.biddingRole == Heuren)
+            .map(_.session.ref)
+            .foreach(
+              ref => ref ! Messages.Game.Bidding.ObservedAccept(playersByRole(Heuren).session.player, points)
+            )
+          context.become(expectBid(state))
+        }
+        case Messages.Game.Bidding.Pass() => {
+          println(s"Zaagen player $sender passed on ${state.bidded.getOrElse(Scores.biddingScores(0))}")
+          state.players.filterNot(p => p.state.biddingRole == Heuren).map(_.session.ref).foreach(
+            ref => ref ! Messages.Game.Bidding.ObservedPass(playersByRole(Heuren).session.player, points)
+          )
+          context.become(nextBiddingRoles(Heuren, state))
+        }
+      }
+    }
+  }
+
+  def nextBiddingRoles(whoPassed: BiddingRole, state: GameRoomActor.GameState): Receive = {
+    val newPlayers: List[PlayerInfo] = state.players.map(playerWhoPassed => playerWhoPassed match {
+      case PlayerInfo(PlayerSession(_, ref), PlayerState(_, role, _, _)) if role == whoPassed => {
+        playerWhoPassed.copy(state = playerWhoPassed.state.copy(biddingRole = Passed))
+      }
+    }).map(player => player match {
+      case PlayerInfo(_, PlayerState(_, Zaagen, _, _)) => {
+        player.copy(state = player.state.copy(biddingRole = Heuren))
+      }
+      case PlayerInfo(_, PlayerState(_, Geeben, _, _)) => {
+        player.copy(state = player.state.copy(biddingRole = Zaagen))
+      } // heuren will stay heuren
+    })
+
+    val newState = state.copy(players = newPlayers)
+    val playersByRole = getPlayersByRole(newState)
+    playersByRole.get(Zaagen).map(
+      _.session.ref ! Messages.Game.Bidding.Roles.Speaking(playersByRole(Heuren).session.player)
+    )
+    playersByRole.get(Heuren).map(
+      _.session.ref ! Messages.Game.Bidding.Roles.Listening(playersByRole(Zaagen).session.player)
+    )
+    playersByRole.get(Passed).map(
+      _.session.ref ! Messages.Game.Bidding.Roles.Waiting(playersByRole(Zaagen).session.player)
+    )
+
+    newPlayers.count(_.state.biddingRole == Passed) match {
+      case 3 if state.bidded == None => ramsch(newState)
+      case 2 if state.bidded.isDefined => whatAreWePlaying(newState)
+      case _ => expectBid(newState)
+    }
+  }
+
+  def ramsch(state: GameRoomActor.GameState): Receive = {
+    case m => {
+      println(s"ramsching $m")
+    }
+  }
+
+  def whatAreWePlaying(state: GameRoomActor.GameState): Receive = {
+    case m => {
+      println(s"weArePlaying $m")
+    }
+  }
   /**
     * The game is being played.
     */
@@ -159,4 +262,5 @@ class GameRoomActor(val room: GameRoom) extends Actor {
     val session = playerActorMap.get(ref).get
     println(f"Player ${session.player} has left the game.")
     self ! Messages.Game.Terminate(session.player)
-  }}
+  }
+}

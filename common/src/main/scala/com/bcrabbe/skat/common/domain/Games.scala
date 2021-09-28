@@ -34,6 +34,7 @@ sealed trait JacksMultiply {
 }
 
 object Scores {
+
   val biddingScores: Seq[(Int, Seq[Game])] = List(
     (18, List(Colour(Diamonds, Jacks(Jacks.WithOrWithout, 1)))),
     (20, List(Colour(Hearts, Jacks(Jacks.WithOrWithout, 1)))),
@@ -47,4 +48,15 @@ object Scores {
     (36, List(Colour(Clubs, Jacks(Jacks.WithOrWithout, 2)))),
     (48, List(Grand(Jacks(Jacks.WithOrWithout, 1))))
   )
+
+  def nextScore(currentScore: Int): (Int, Seq[Game]) = {
+    biddingScores.find {
+      case (score, games) if score > currentScore => true
+      case _ => false
+    } match {
+      case Some(game) => game
+      case None => biddingScores(biddingScores.length)
+    }
+  }
+
 }

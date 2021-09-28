@@ -10,11 +10,6 @@ object Messages {
     case class Message(message: String)
   }
 
-  object Player {
-    case class Accept()
-    case class Refuse()
-  }
-
   object Game {
     case class Joined(room: GameRoom)
     case class SetUp(opponents: List[Player])
@@ -31,13 +26,17 @@ object Messages {
     object Bidding {
       trait RoleMessage
       object Roles {
-        case class Listening() extends RoleMessage
-        case class Speaking() extends RoleMessage
-        case class Waiting() extends RoleMessage
+        case class Listening(to: Player) extends RoleMessage
+        case class Speaking(to: Player) extends RoleMessage
+        case class Waiting(to: Player) extends RoleMessage
         case class Passed() extends RoleMessage
       }
-      case class Offer(points: Int)
-
+      case class Bid(points: Int)
+      case class AcceptBid()
+      case class Pass()
+      case class ObservedBid(player: Player, points: Int)
+      case class ObservedAccept(player: Player, points: Int)
+      case class ObservedPass(player: Player, points: Int)
     }
 
     object Terminate {

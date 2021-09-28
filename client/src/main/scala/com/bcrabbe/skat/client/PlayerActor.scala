@@ -1,14 +1,15 @@
 package com.bcrabbe.skat.client
 
 import akka.actor.Actor
-import com.bcrabbe.skat.common.domain._
+import com.bcrabbe.skat.common.domain.{ Scores, Card, CardStack, GameRoom, Player }
 import com.bcrabbe.skat.common.Utils
-import scala.util.Success
 import akka.actor.PoisonPill
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
+
+import scala.concurrent.{ Future }
 import akka.actor.ActorRef
-import scala.util.Failure
+import scala.util.{ Failure, Success }
 import akka.actor.Props
 import com.bcrabbe.skat.common.Messages
 
@@ -53,12 +54,18 @@ class PlayerActor extends Actor {
   var hand: CardStack = null
 
   /**
+   * The player's hand
+   */
+  var bidded: Int = 0
+
+  /**
    * Reset the game state. This is usually called before restarting a new game.
    */
   def resetState: Unit = {
     room = null
     opponents = null
     hand = null
+    bidded = 0
   }
 
   /**
@@ -66,73 +73,10 @@ class PlayerActor extends Actor {
    */
   def leaveRoom: Unit = {
     roomRef ! Messages.Game.Leave()
-
     resetState
     room = null
     roomRef = null
-
     context.become(waiting)
-  }
-
-  /**
-   * Print the current state of the game and prompt the user to play a card
-   */
-  def promptCard(top: Option[Card]): Unit = {
-    def doPrompt: Unit = {
-      Utils.readNumericResponse.onComplete {
-        case Success(idx: Some[Int]) if hand.cards.isDefinedAt(idx.get - 1) => {
-          val card = hand.cards(idx.get - 1)
-          self ! Events.CardPlayed(card)
-        }
-        case _ => {
-          println("Invalid input, please try again.")
-          doPrompt
-        }
-      }
-    }
-
-    val topCardName = top match { case Some(c: Card) => c.toString case _ => "None" }
-
-    println(f"The top-most card is $topCardName")
-
-    println(f"Please pick a card to play:")
-
-    hand.cards.zipWithIndex.foreach { case (card, idx) => println(f"${(idx + 1)}. $card") }
-
-    doPrompt
-  }
-
-  /**
-   * Ask if the player wants a rematch
-   */
-  def promptRematch = {
-    def doPrompt: Unit = {
-      Utils.readBooleanResponse.onComplete {
-        case Success(result) => {
-          result match {
-            case true => {
-              println("Waiting for the opponent's answer")
-
-              roomRef ! Messages.Player.Accept()
-            }
-            case false => {
-              println("Leaving the game")
-
-              roomRef ! Messages.Player.Refuse()
-
-              leaveRoom
-            }
-          }
-        }
-        case _ => {
-          println("Invalid input, please try again.")
-          doPrompt
-        }
-      }
-    }
-
-    println(f"Would you like a rematch?")
-    doPrompt
   }
 
   /**
@@ -179,35 +123,106 @@ class PlayerActor extends Actor {
   }
 
   def waitingForBiddingRole: Receive = playing orElse {
-    case m: Messages.Game.Bidding.Roles.Speaking => {
-      println("you are speaking")
+    case Messages.Game.Bidding.Roles.Speaking(player: Player) => {
+      println(s"you are speaking to ${player.name}")
+      makeBid.map(context.become(_))
     }
-    case m: Messages.Game.Bidding.Roles.Waiting => {
-      println("you are waiting")
+    case Messages.Game.Bidding.Roles.Waiting(player: Player) => {
+      println(s"you are waiting for ${player.name}")
+      context.become(watchingBidding)
     }
-    case m: Messages.Game.Bidding.Roles.Listening => {
-      println("you are listening")
+    case Messages.Game.Bidding.Roles.Listening(player: Player) => {
+      println(s"you are listening to ${player.name}")
+      context.become(replyBidding)
+    }
+    case Messages.Game.Bidding.Roles.Passed() => {
+      println(s"you are waiting for bidding to finish")
+      context.become(watchingBidding)
     }
   }
+
+  def makeBid: Future[Receive] = {
+    val (nextBidValue, nextBidGames) = Scores.nextScore(bidded)
+    println(s"Would you like to bid $nextBidValue? ($nextBidGames)")
+    def doPrompt: Future[Receive] = Utils.readBooleanResponse map {
+      case true => {
+        roomRef ! Messages.Game.Bidding.Bid(nextBidValue)
+        bidded = nextBidValue
+        println(s"you offered $nextBidValue")
+        awaitingBidResponse
+      }
+      case false => {
+        roomRef ! Messages.Game.Bidding.Pass()
+        println(s"you passed on $nextBidValue")
+        watchingBidding
+      }
+    } recoverWith {
+      case _ => {
+        println("Invalid input, please try again.")
+        doPrompt
+      }
+    }
+    doPrompt
+  }
+
+  def awaitingBidResponse: Receive = playing orElse {
+    case Messages.Game.Bidding.ObservedAccept(player: Player, bid: Int) => {
+      println(s"${player.name} accepted $bid")
+      makeBid.map(context.become(_))
+    }
+    case Messages.Game.Bidding.ObservedPass(player: Player, bid: Int) => {
+      println(s"${player.name} passed $bid")
+      context.become(waitingForBiddingRole orElse whatAreWePlaying)
+    }
+    case m => {
+      println(s"ignoring $m from $sender - awaitingBidResponse")
+    }
+  }
+
+  def watchingBidding: Receive = waitingForBiddingRole orElse {
+    case Messages.Game.Bidding.ObservedBid(player: Player, bid: Int) => {
+      println(s"${player.name} bid $bid")
+    }
+    case Messages.Game.Bidding.ObservedAccept(player: Player, bid: Int) => {
+      println(s"${player.name} accepted $bid")
+    }
+    case m => {
+      println(s"ignoring $m from $sender - watchingBidding")
+    }
+  }
+
+  def replyBidding: Receive = playing orElse {
+    case Messages.Game.Bidding.ObservedBid(player: Player, bid: Int) => {
+      def doPrompt: Future[Receive] = {
+        println(s"${player.name} bid $bid. Match?")
+        Utils.readBooleanResponse map {
+          case true => {
+            roomRef ! Messages.Game.Bidding.AcceptBid()
+            println(s"you accepted $bid")
+            replyBidding
+          }
+          case false => {
+            roomRef ! Messages.Game.Bidding.Pass()
+            println(s"you passed on $bid")
+            watchingBidding
+          }
+        } recoverWith {
+          case _ => {
+            println("Invalid input, please try again.")
+            doPrompt
+          }
+        }
+      }
+      doPrompt
+    }
+  }
+
+  def whatAreWePlaying: Receive = playing
 
   /**
    * An abstract state that covers the part where the player is playing the game, whether it's their turn or their opponent's
    */
   def playing: Receive = {
-    case Messages.Game.Lose() => {
-      println("You have lost the game.")
-
-      context.become(finished)
-
-      promptRematch
-    }
-    case Messages.Game.Win() => {
-      println("You have won the game!")
-
-      context.become(finished)
-
-      promptRematch
-    }
     case t: Messages.Game.Terminate => t.reason match {
       case reason: Messages.Game.Terminate.Reason.PlayerLeft if reason.player != me => {
         println(f"Your opponent has left the game, you will be returned to the lobby")
@@ -219,27 +234,6 @@ class PlayerActor extends Actor {
       }
     }
     case Messages.Server.Message(msg) => println(f"[Server]: $msg")
-  }
-
-  /**
-   * The "limbo" state where the player is waiting for the server to decide whose begins
-   */
-  def dealPending: Receive = playing orElse {
-    case Messages.Game.InTurn(top: Option[Card], isFished: Boolean, state: PlayerState, opponentScore: PlayerScore) => {
-      hand = state.hand
-
-      if (isFished) {
-        print("The opponent has successfully fished cards. ")
-      }
-
-      println(f"It's your turn now. Your Score: ${state.score}, Opponent's Score: ${opponentScore}")
-
-      promptCard(top)
-    }
-    case Messages.Game.OpponentInTurn(top: Option[Card], isFished: Boolean, state: PlayerState, opponentScore: PlayerScore) => {
-      println(f"It's the opponent's turn now. Your Score: ${state.score}, Opponent's Score: ${opponentScore}")
-
-    }
   }
 
   // /**
