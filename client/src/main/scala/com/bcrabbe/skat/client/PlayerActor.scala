@@ -154,7 +154,7 @@ class PlayerActor extends Actor {
       case false => {
         roomRef ! Messages.Game.Bidding.Pass()
         println(s"you passed on $nextBidValue")
-        watchingBidding
+        waitingForBiddingRole orElse whatAreWePlaying
       }
     } recoverWith {
       case _ => {
@@ -186,6 +186,10 @@ class PlayerActor extends Actor {
     case Messages.Game.Bidding.ObservedAccept(player: Player, bid: Int) => {
       println(s"${player.name} accepted $bid")
     }
+    case Messages.Game.Bidding.ObservedPass(player: Player, bid: Int) => {
+      println(s"${player.name} passed $bid")
+      context.become(waitingForBiddingRole orElse whatAreWePlaying)
+    }
     case m => {
       println(s"ignoring $m from $sender - watchingBidding")
     }
@@ -204,7 +208,7 @@ class PlayerActor extends Actor {
           case false => {
             roomRef ! Messages.Game.Bidding.Pass()
             println(s"you passed on $bid")
-            watchingBidding
+            waitingForBiddingRole orElse whatAreWePlaying
           }
         } recoverWith {
           case _ => {

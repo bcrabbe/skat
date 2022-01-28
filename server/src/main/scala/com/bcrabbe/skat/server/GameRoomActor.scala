@@ -154,7 +154,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
           context.become(expectBid(state))
         }
         case Messages.Game.Bidding.Pass() => {
-          println(s"Zaagen player $sender passed on ${state.bidded.getOrElse(Scores.biddingScores(0))}")
+          println(s"Heuren player $sender passed on ${state.bidded.getOrElse(Scores.biddingScores(0))}")
           state.players.filterNot(p => p.state.biddingRole == Heuren).map(_.session.ref).foreach(
             ref => ref ! Messages.Game.Bidding.ObservedPass(playersByRole(Heuren).session.player, points)
           )
@@ -165,6 +165,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
   }
 
   def nextBiddingRoles(whoPassed: BiddingRole, state: GameRoomActor.GameState): Receive = {
+    println(s"nextBiddingRoles")
     val newPlayers: List[PlayerInfo] = state.players.map(playerWhoPassed => playerWhoPassed match {
       case PlayerInfo(PlayerSession(_, ref), PlayerState(_, role, _, _)) if role == whoPassed => {
         playerWhoPassed.copy(state = playerWhoPassed.state.copy(biddingRole = Passed))
@@ -179,6 +180,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
     })
 
     val newState = state.copy(players = newPlayers)
+    println(s"nextBiddingRoles $newState")
     val playersByRole = getPlayersByRole(newState)
     playersByRole.get(Zaagen).map(
       _.session.ref ! Messages.Game.Bidding.Roles.Speaking(playersByRole(Heuren).session.player)
