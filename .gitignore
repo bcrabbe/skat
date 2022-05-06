@@ -10,3 +10,7 @@ target/
 \#*\#
 .\#*
 TAGS
+.metals/
+.bloop/
+.ammonite/
+metals.sbt

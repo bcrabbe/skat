@@ -1,6 +1,5 @@
 package com.bcrabbe.skat.common
 
-import akka.actor.ActorRef
 import com.bcrabbe.skat.common.domain._
 
 object Messages {

@@ -2,7 +2,6 @@ package com.bcrabbe.skat.server
 
 import com.bcrabbe.skat.server.lobby.LobbyActor
 import akka.actor.ActorSystem
-import akka.routing.FromConfig
 
 object SkatServer {
   def main(args: Array[String]): Unit = {

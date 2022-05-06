@@ -5,14 +5,9 @@ import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.remote.DisassociatedEvent
 import com.bcrabbe.skat.server.session.PlayerSession
 import com.bcrabbe.skat.common.Messages
 import com.bcrabbe.skat.common.domain._
-import scala.util.Failure
-import scala.util.Random
-import scala.util.Success
-import scala.util.Try
 
 object GameRoomActor {
 
@@ -43,7 +38,7 @@ object GameRoomActor {
 }
 
 class GameRoomActor(val room: GameRoom) extends Actor {
-  import GameRoomActor.{ GameState, PlayerInfo, getPlayersByRole }
+  import GameRoomActor.{ PlayerInfo, getPlayersByRole }
 
   var playerActorMap: Map[ActorRef, PlayerSession] = Map()
   def receive = initializing
@@ -101,7 +96,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
     val playersByRole = getPlayersByRole(initialState)
     playersByRole(Zaagen).session.ref ! Messages.Game.Bidding.Roles.Speaking(playersByRole(Heuren).session.player)
     playersByRole(Heuren).session.ref ! Messages.Game.Bidding.Roles.Listening(playersByRole(Zaagen).session.player)
-    playersByRole(Geeben).session.ref ! Messages.Game.Bidding.Roles.Waiting(playersByRole(Zaagen).session.player)
+    playersByRole(Geeben).session.ref ! Messages.Game.Bidding.Roles.Waiting(playersByRole(Geeben).session.player)
     context.become(expectBid(initialState))
   }
 
