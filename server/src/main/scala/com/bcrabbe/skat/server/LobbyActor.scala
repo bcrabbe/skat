@@ -44,6 +44,8 @@ class LobbyActor extends Actor {
 
       println(f"Player has disconnected: ${session.player}")
     }
+
+    case unkown => println(s"UNKOWN $unkown")
   }
 
   override def preStart() = {

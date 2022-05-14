@@ -44,22 +44,21 @@ class LobbyActorTest() extends TestKit(ActorSystem("LobbyActorTest"))
 //     val lobby = TestActorRef(new LobbyActor {
 //       override def startRoom(room: GameRoom) = roomProbe.ref
 //     }, "lobby")
-
 //     val player1 = new TestProbe(system) {
 //       val player = Player(this.ref.path.name, s"PlayerProbe-quiter")
 //       lobby ! Messages.Server.Connect(player)
+//       expectMsgType[PoisonPill]
 //     }
 //     val player2 = new TestProbe(system) {
 //       val player = Player(this.ref.path.name, s"PlayerProbe-stays")
 //       lobby ! Messages.Server.Connect(player)
 //     }
 // //    player1.stop()
-//     lobby ! Terminated(player1.ref)
-
 //     within(1 seconds, 2 seconds) {
 //       lobby.underlyingActor.waiting.length shouldEqual 1
 //     }
 
+//     lobby ! PoisonPill
 //   }
 
 }

@@ -94,9 +94,9 @@ class GameRoomActor(val room: GameRoom) extends Actor {
       }
     )
     val playersByRole = getPlayersByRole(initialState)
-    playersByRole(Zaagen).session.ref ! Messages.Game.Bidding.Roles.Speaking(playersByRole(Heuren).session.player)
-    playersByRole(Heuren).session.ref ! Messages.Game.Bidding.Roles.Listening(playersByRole(Zaagen).session.player)
-    playersByRole(Geeben).session.ref ! Messages.Game.Bidding.Roles.Waiting(playersByRole(Geeben).session.player)
+    playersByRole(Zaagen).session.ref ! Messages.Game.Bidding.Roles.Speaking(to = playersByRole(Heuren).session.player)
+    playersByRole(Heuren).session.ref ! Messages.Game.Bidding.Roles.Listening(to = playersByRole(Zaagen).session.player)
+    playersByRole(Geeben).session.ref ! Messages.Game.Bidding.Roles.Waiting(to = playersByRole(Zaagen).session.player)
     context.become(expectBid(initialState))
   }
 

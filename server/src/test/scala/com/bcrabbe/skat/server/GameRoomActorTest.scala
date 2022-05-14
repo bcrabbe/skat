@@ -7,13 +7,14 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpecLike
 import scala.concurrent.duration._
-import com.bcrabbe.skat.common.domain.{Player, GameRoom, CardStack, Geeben, BiddingRole}
+import com.bcrabbe.skat.common.domain.{Player, GameRoom, CardStack, Geeben, Heuren, Zaagen, BiddingRole}
 import com.bcrabbe.skat.common.Messages
 import com.bcrabbe.skat.common.Messages.Game.Bidding.Roles.{ Listening, Speaking, Waiting, Passed }
 import com.bcrabbe.skat.common.Messages.Game.Bidding.RoleMessage
 import akka.actor.{ PoisonPill, ActorRef }
 import com.bcrabbe.skat.server.session.PlayerSession
 import scala.concurrent.duration.Duration
+
 
 class GameRoomActorTest() extends TestKit(ActorSystem("GameRoomActorTest"))
     with AnyFlatSpecLike
@@ -54,23 +55,28 @@ class GameRoomActorTest() extends TestKit(ActorSystem("GameRoomActorTest"))
     gameRoom ! PoisonPill
   }
 
-  it should "bidding" in {
-    val players: List[TestProbe] = List.range(1, 4).map(n => TestProbe())
+  it should "initial bidding roles" in {
+    case class PlayerProbeInfo(name: String, player: Player, probe: TestProbe)
+    val probes: List[PlayerProbeInfo] = List.range(1, 4).map(n => {
+      PlayerProbeInfo(
+        name = s"probe$n",
+        player = Player(s"$n", s"probe$n"),
+        probe = TestProbe(s"probe$n")
+      )
+    })
     val room = new GameRoom(name = s"BiddingTestRoom")
     val gameRoom = TestActorRef(new GameRoomActor(room), "room")
-
     gameRoom ! GameRoomActor.Messages.ReceivePlayers(
-      players.map(probe => PlayerSession(
-        Player(probe.ref.path.name, "playerProbe"),
-        probe.ref
-      ))
+      probes.map(probe => PlayerSession(probe.player, probe.probe.ref))
     )
-
-    val playerByRole: Map[RoleMessage, List[akka.testkit.TestProbe]] = players.groupBy(_.fishForSpecificMessage(1.second, "wait for role message") {
-      case role: RoleMessage => role
+    val playerByRole: Map[BiddingRole, List[akka.testkit.TestProbe]] = probes.map(_.probe).groupBy(_.fishForSpecificMessage(1.second, "wait for role message") {
+      case _: Speaking => Zaagen
+      case _: Listening => Heuren
+      case _: Waiting => Geeben
     })
-
     println(playerByRole)
+    playerByRole.keys.to[Set].intersect(Set(Geeben, Heuren, Zaagen)) should have size 3
+    playerByRole.values.map(_.head).to[Set].intersect(probes.map(_.probe).to[Set]) should have size 3
     gameRoom ! PoisonPill
   }
 }
