@@ -2,7 +2,7 @@ package com.bcrabbe.skat.server.game
 
 import com.bcrabbe.skat.server.lobby.LobbyActor
 import akka.actor.{ ActorSystem, Terminated }
-import akka.testkit.{ ImplicitSender, TestActors, TestKit, TestProbe, TestActorRef }
+import akka.testkit.{ ImplicitSender, TestActors, TestKit, TestProbe, TestActorRef, TestActor }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -32,7 +32,6 @@ class GameRoomActorTest() extends TestKit(ActorSystem("GameRoomActorTest"))
     val players: List[TestProbe] = List.range(1, 4).map(n => TestProbe())
     val room = new GameRoom(name = s"DealTestRoom")
     val gameRoom = TestActorRef(new GameRoomActor(room), "room")
-
     gameRoom ! GameRoomActor.Messages.ReceivePlayers(
       players.map(probe => PlayerSession(
         Player(probe.ref.path.name, "playerProbe"),
@@ -51,32 +50,59 @@ class GameRoomActorTest() extends TestKit(ActorSystem("GameRoomActorTest"))
     roles.keySet.size shouldBe 3
     // should not give same role to two players
     roles.values.toSet.size shouldBe 3
-
     gameRoom ! PoisonPill
   }
 
-  it should "initial bidding roles" in {
-    case class PlayerProbeInfo(name: String, player: Player, probe: TestProbe)
-    val probes: List[PlayerProbeInfo] = List.range(1, 4).map(n => {
-      PlayerProbeInfo(
-        name = s"probe$n",
-        player = Player(s"$n", s"probe$n"),
-        probe = TestProbe(s"probe$n")
-      )
-    })
+  case class PlayerProbeInfo(player: Player, probe: TestProbe)
+
+  it should "terminate if a player leaves" in {
+    val probes: List[PlayerProbeInfo] = List.range(1, 4).map(n => PlayerProbeInfo(
+      player = Player(s"$n", s"probe$n"),
+      probe = TestProbe(s"probe$n")
+    ))
+    val room = new GameRoom(name = s"BiddingTestRoom")
+    val gameRoom = TestActorRef(new GameRoomActor(room), "room2")
+    gameRoom ! GameRoomActor.Messages.ReceivePlayers(
+      probes.map(probe => PlayerSession(probe.player, probe.probe.ref))
+    )
+    probes(0).probe.ref ! PoisonPill
+    probes(1).probe.fishForSpecificMessage(1.second, "wait for Terminate") {
+      case _: Messages.Game.Terminate => true
+      case _ => false
+    } shouldEqual true
+    probes(2).probe.fishForSpecificMessage(1.second, "wait for role message") {
+      case _: Messages.Game.Terminate => true
+      case _ => false
+    } shouldEqual true
+    gameRoom ! PoisonPill
+  }
+
+  it should "bidding" in {
+    val probes: List[PlayerProbeInfo] = List.range(1, 4).map(n => PlayerProbeInfo(
+      player = Player(s"$n", s"probe$n"),
+      probe = TestProbe(s"probe$n")
+    ))
     val room = new GameRoom(name = s"BiddingTestRoom")
     val gameRoom = TestActorRef(new GameRoomActor(room), "room")
     gameRoom ! GameRoomActor.Messages.ReceivePlayers(
       probes.map(probe => PlayerSession(probe.player, probe.probe.ref))
     )
-    val playerByRole: Map[BiddingRole, List[akka.testkit.TestProbe]] = probes.map(_.probe).groupBy(_.fishForSpecificMessage(1.second, "wait for role message") {
+    val playerByRole: Map[BiddingRole, akka.testkit.TestProbe] = probes.map(_.probe).groupBy(_.fishForSpecificMessage(1.second, "wait for role message") {
       case _: Speaking => Zaagen
       case _: Listening => Heuren
       case _: Waiting => Geeben
-    })
-    println(playerByRole)
+    }).transform((key, value) => value.head)
+    // initial roles
     playerByRole.keys.to[Set].intersect(Set(Geeben, Heuren, Zaagen)) should have size 3
-    playerByRole.values.map(_.head).to[Set].intersect(probes.map(_.probe).to[Set]) should have size 3
+    playerByRole.values.to[Set].intersect(probes.map(_.probe).to[Set]) should have size 3
+    // non bidders shouldn't be able to bid
+    playerByRole(Heuren).setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+      case x => {
+        sender ! Messages.Game.Bidding.Bid(18)
+        TestActor.KeepRunning
+      }
+    })
     gameRoom ! PoisonPill
   }
+
 }

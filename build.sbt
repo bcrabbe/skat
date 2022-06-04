@@ -1,4 +1,5 @@
-lazy val akkaVersion = "2.5.0"
+lazy val akkaVersion = "2.6.8"
+lazy val akkaHttpVersion = "10.2.9"
 
 enablePlugins(JavaAppPackaging)
 
@@ -13,6 +14,8 @@ lazy val commonSettings = Seq(
 
 lazy val deps = Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
   "org.scalactic" %% "scalactic" % "3.2.9",

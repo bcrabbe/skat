@@ -277,9 +277,9 @@ class PlayerActor extends Actor {
    */
   def tryReconnect = {
     def doTry(attempts: Int): Unit = {
-      context.system.actorSelection("akka.tcp://SkatServer@127.0.0.1:47000/user/lobby").resolveOne()(10.seconds).onComplete(x => x match {
+      context.system.actorSelection("akka://SkatServer@127.0.0.1:47000/user/lobby").resolveOne()(10.seconds).onComplete(x => x match {
         case Success(ref: ActorRef) => {
-          println("Server found, attempting to connect...")
+          println(s"Server found (ref=$ref), attempting to connect...")
           server = ref
           server ! Messages.Server.Connect(me)
         }

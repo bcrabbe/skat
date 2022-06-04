@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 
 object SkatServer {
   def main(args: Array[String]): Unit = {
-    val system = ActorSystem("SkatServer")
+    implicit val system = ActorSystem("SkatServer")
     system.actorOf(LobbyActor.props(), "lobby")
   }
 }

@@ -203,7 +203,7 @@ class GameRoomActor(val room: GameRoom) extends Actor {
   def whatAreWePlaying(state: GameRoomActor.GameState): Receive = {
     case m => {
       println(s"weArePlaying $m")
-    }
+   }
   }
   /**
     * The game is being played.
